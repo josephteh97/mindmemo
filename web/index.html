@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Solace — Your Personal Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root {
+  --cream:#FAF7F2; --parchment:#F2EDE4; --blush:#EDD5C5;
+  --rose:#C4856A; --rosedark:#9B5E47;
+  --sage:#8FA58A; --sagedark:#5C7557;
+  --ink:#2A2118; --ink-mid:#5C4F42; --ink-soft:#8C7E72; --ink-ghost:#BEB3A8;
+  --white:#FFFFFF; --card:#FDFAF6; --sidebar-w:280px;
+  --sky-a:#B8D4F0; --sky-b:#D6E8F7;
+}
+
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);overflow:hidden;}
+
+/* ── HEALING BACKGROUND CANVAS ── */
+#bgCanvas {
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;
+  opacity:0.55;
+  transition:opacity 1s;
+}
+
+.app {
+  position:relative;z-index:1;
+  display:grid;
+  grid-template-columns:var(--sidebar-w) 1fr;
+  height:100vh;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background:rgba(242,237,228,0.92);
+  border-right:1px solid var(--blush);
+  display:flex;flex-direction:column;overflow:hidden;
+  backdrop-filter:blur(12px);
+}
+
+.sidebar-top{padding:28px 22px 18px;border-bottom:1px solid var(--blush);}
+
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:5px;}
+.brand-bloom{width:30px;height:30px;}
+.brand-name{font-family:'Cormorant Garamond',serif;font-size:25px;font-weight:400;color:var(--rosedark);letter-spacing:.04em;}
+.brand-tagline{font-size:10px;color:var(--ink-soft);letter-spacing:.08em;text-transform:uppercase;padding-left:40px;}
+
+/* WEATHER WIDGET */
+.weather-section{
+  padding:18px 22px;
+  border-bottom:1px solid var(--blush);
+}
+
+.section-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);margin-bottom:10px;}
+
+.weather-card{
+  background:var(--card);
+  border:1px solid var(--blush);
+  border-radius:14px;
+  padding:14px 16px;
+  display:flex;align-items:center;gap:14px;
+  transition:all 0.6s ease;
+}
+
+.weather-icon-wrap{
+  width:48px;height:48px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+
+.weather-icon-wrap svg{width:44px;height:44px;}
+
+.weather-text{}
+.weather-condition{
+  font-family:'Cormorant Garamond',serif;
+  font-size:17px;font-weight:400;
+  color:var(--ink);
+  margin-bottom:2px;
+  transition:all 0.5s;
+}
+.weather-desc{font-size:11px;color:var(--ink-soft);line-height:1.4;transition:all 0.5s;}
+
+/* mood bar */
+.mood-section{padding:16px 22px;border-bottom:1px solid var(--blush);}
+.mood-row{display:flex;flex-wrap:wrap;gap:6px;}
+.mood-chip{
+  padding:5px 11px;border-radius:20px;font-size:11.5px;
+  cursor:pointer;border:1px solid transparent;
+  color:var(--ink-mid);background:var(--cream);
+  transition:all .18s;
+}
+.mood-chip:hover{border-color:var(--rose);}
+.mood-chip.active{background:var(--blush);border-color:var(--rose);color:var(--rosedark);}
+
+/* profile */
+.profile-section{padding:16px 22px;border-bottom:1px solid var(--blush);}
+.profile-card{background:var(--card);border:1px solid var(--blush);border-radius:12px;padding:13px 15px;}
+.profile-name{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;color:var(--ink);margin-bottom:2px;}
+.profile-sub{font-size:11px;color:var(--ink-soft);margin-bottom:10px;}
+.trait-row{display:flex;flex-wrap:wrap;gap:5px;}
+.trait{font-size:10.5px;padding:3px 8px;border-radius:10px;background:var(--parchment);color:var(--ink-mid);border:1px solid var(--blush);}
+.trait.sage{background:#EBF2E9;border-color:#BDD6B8;color:var(--sagedark);}
+.trait.rose{background:var(--blush);border-color:#D9A88E;color:var(--rosedark);}
+
+/* growth */
+.growth-section{padding:16px 22px;flex:1;}
+.growth-bars{display:flex;flex-direction:column;gap:9px;}
+.growth-header{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);margin-bottom:4px;}
+.growth-track{height:4px;background:var(--blush);border-radius:2px;overflow:hidden;}
+.growth-fill{height:100%;border-radius:2px;background:var(--rose);transition:width 1.3s cubic-bezier(.4,0,.2,1);}
+.growth-fill.sage{background:var(--sage);}
+
+.diary-notice{
+  margin:0 22px 18px;padding:9px 13px;
+  background:#EBF2E9;border:1px solid #BDD6B8;border-radius:10px;
+  font-size:11px;color:var(--sagedark);
+  display:flex;align-items:center;gap:7px;
+}
+.diary-dot{width:6px;height:6px;border-radius:50%;background:var(--sage);flex-shrink:0;}
+
+/* ── MAIN ── */
+.main{
+  display:flex;flex-direction:column;
+  background:rgba(250,247,242,0.78);
+  backdrop-filter:blur(16px);
+  overflow:hidden;
+}
+
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 30px;
+  border-bottom:1px solid var(--blush);
+  background:rgba(250,247,242,0.85);
+  flex-shrink:0;
+}
+.topbar-left{display:flex;align-items:center;gap:9px;}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--sage);}
+.status-text{font-size:13px;color:var(--ink-soft);}
+.topbar-right{display:flex;gap:7px;align-items:center;}
+.topbar-btn{
+  padding:6px 15px;border-radius:20px;font-size:12px;
+  font-family:'DM Sans',sans-serif;cursor:pointer;
+  border:1px solid var(--blush);background:transparent;color:var(--ink-mid);
+  transition:all .15s;
+}
+.topbar-btn:hover{background:var(--blush);border-color:var(--rose);color:var(--rosedark);}
+.topbar-btn.end{border-color:var(--sage);color:var(--sagedark);}
+.topbar-btn.end:hover{background:#EBF2E9;}
+
+/* weather mood topbar badge */
+.weather-badge{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;
+  background:rgba(237,213,197,0.5);
+  border:1px solid var(--blush);
+  font-size:12px;color:var(--ink-mid);
+  transition:all 0.5s;
+}
+.weather-badge-icon{font-size:15px;}
+
+.chat-scroll{
+  flex:1;overflow-y:auto;
+  padding:28px 36px;
+  display:flex;flex-direction:column;gap:22px;
+  scroll-behavior:smooth;
+}
+.chat-scroll::-webkit-scrollbar{width:4px;}
+.chat-scroll::-webkit-scrollbar-track{background:transparent;}
+.chat-scroll::-webkit-scrollbar-thumb{background:var(--blush);border-radius:2px;}
+
+.date-divider{
+  display:flex;align-items:center;gap:12px;
+  color:var(--ink-ghost);font-size:10.5px;
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.date-line{flex:1;height:1px;background:var(--blush);}
+
+.msg-group{display:flex;flex-direction:column;gap:5px;}
+.msg-group.user{align-items:flex-end;}
+.msg-group.solace{align-items:flex-start;}
+
+.msg-label{
+  font-size:10px;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--ink-ghost);padding:0 4px;
+}
+
+.bubble{
+  max-width:66%;padding:13px 17px;
+  line-height:1.65;font-size:14.5px;
+}
+.bubble.user{
+  background:var(--blush);color:var(--ink);
+  border-radius:18px 18px 4px 18px;
+}
+.bubble.solace{
+  background:rgba(255,255,255,0.92);color:var(--ink);
+  border:1px solid var(--blush);
+  border-radius:18px 18px 18px 4px;
+  backdrop-filter:blur(6px);
+}
+.bubble.solace .quote-line{
+  display:block;border-left:2px solid var(--rose);padding-left:12px;
+  margin:8px 0;
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--rosedark);
+}
+
+.typing-bubble{
+  background:rgba(255,255,255,0.9);border:1px solid var(--blush);
+  border-radius:18px 18px 18px 4px;
+  padding:13px 18px;
+  display:none;align-items:center;gap:5px;width:fit-content;
+  backdrop-filter:blur(6px);
+}
+.typing-bubble.visible{display:flex;}
+.typing-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--ink-ghost);
+  animation:typingPulse 1.2s infinite;
+}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+@keyframes typingPulse{
+  0%,60%,100%{opacity:.3;transform:translateY(0);}
+  30%{opacity:1;transform:translateY(-3px);}
+}
+
+.diary-read-notice{
+  align-self:center;font-size:11px;color:var(--sagedark);
+  background:#EBF2E9;border:1px solid #BDD6B8;
+  border-radius:20px;padding:6px 14px;
+  display:flex;align-items:center;gap:6px;
+}
+
+.insight-card{
+  background:rgba(253,250,246,0.94);border:1px solid var(--blush);
+  border-radius:14px;padding:15px 17px;max-width:66%;
+  backdrop-filter:blur(6px);
+}
+.insight-card .ic-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--rose);margin-bottom:5px;}
+.insight-card .ic-text{
+  font-family:'Cormorant Garamond',serif;font-size:15.5px;font-style:italic;
+  color:var(--ink-mid);line-height:1.6;
+}
+
+/* weather transition card */
+.weather-shift{
+  align-self:center;
+  font-size:11.5px;color:var(--ink-mid);
+  background:rgba(255,255,255,0.8);
+  border:1px solid var(--blush);
+  border-radius:20px;padding:7px 16px;
+  display:flex;align-items:center;gap:8px;
+  font-style:italic;
+}
+
+/* input */
+.input-area{
+  padding:18px 30px 22px;
+  border-top:1px solid var(--blush);
+  background:rgba(250,247,242,0.88);
+  flex-shrink:0;
+  backdrop-filter:blur(12px);
+}
+.input-wrap{
+  display:flex;align-items:flex-end;gap:11px;
+  background:rgba(255,255,255,0.9);
+  border:1px solid var(--blush);border-radius:24px;
+  padding:9px 9px 9px 18px;
+  transition:border-color .15s;
+  backdrop-filter:blur(8px);
+}
+.input-wrap:focus-within{border-color:var(--rose);}
+.input-field{
+  flex:1;border:none;outline:none;
+  font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);
+  background:transparent;resize:none;max-height:110px;line-height:1.5;
+}
+.input-field::placeholder{color:var(--ink-ghost);}
+.send-btn{
+  width:36px;height:36px;border-radius:50%;border:none;
+  background:var(--rose);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background .15s,transform .1s;
+}
+.send-btn:hover{background:var(--rosedark);}
+.send-btn:active{transform:scale(.93);}
+.send-icon{width:15px;height:15px;fill:white;}
+.input-hint{font-size:10.5px;color:var(--ink-ghost);margin-top:7px;padding-left:4px;}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.msg-group,.insight-card,.diary-read-notice,.weather-shift{animation:fadeUp .3s ease forwards;}
+</style>
+</head>
+<body>
+
+<!-- HEALING BACKGROUND -->
+<canvas id="bgCanvas"></canvas>
+
+<div class="app">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">
+        <svg class="brand-bloom" viewBox="0 0 32 32" fill="none">
+          <ellipse cx="16" cy="9" rx="4" ry="7" fill="#C4856A" opacity=".9"/>
+          <ellipse cx="16" cy="9" rx="4" ry="7" fill="#C4856A" opacity=".9" transform="rotate(60 16 16)"/>
+          <ellipse cx="16" cy="9" rx="4" ry="7" fill="#C4856A" opacity=".9" transform="rotate(120 16 16)"/>
+          <ellipse cx="16" cy="9" rx="4" ry="7" fill="#EDD5C5" opacity=".7" transform="rotate(30 16 16)"/>
+          <ellipse cx="16" cy="9" rx="4" ry="7" fill="#EDD5C5" opacity=".7" transform="rotate(90 16 16)"/>
+          <ellipse cx="16" cy="9" rx="4" ry="7" fill="#EDD5C5" opacity=".7" transform="rotate(150 16 16)"/>
+          <circle cx="16" cy="16" r="3.5" fill="#9B5E47"/>
+        </svg>
+        <span class="brand-name">Solace</span>
+      </div>
+      <div class="brand-tagline">Your personal companion</div>
+    </div>
+
+    <!-- WEATHER WIDGET -->
+    <div class="weather-section">
+      <div class="section-label">Your emotional weather</div>
+      <div class="weather-card" id="weatherCard">
+        <div class="weather-icon-wrap" id="weatherIconWrap"></div>
+        <div class="weather-text">
+          <div class="weather-condition" id="weatherCondition">Heavy clouds</div>
+          <div class="weather-desc" id="weatherDesc">Feeling weighed down, carrying a lot inside</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mood-section">
+      <div class="section-label">How are you feeling?</div>
+      <div class="mood-row">
+        <div class="mood-chip" onclick="setMood(this,'calm')">Calm</div>
+        <div class="mood-chip active" onclick="setMood(this,'heavy')">Heavy</div>
+        <div class="mood-chip" onclick="setMood(this,'anxious')">Anxious</div>
+        <div class="mood-chip" onclick="setMood(this,'hopeful')">Hopeful</div>
+        <div class="mood-chip" onclick="setMood(this,'stormy')">Stormy</div>
+        <div class="mood-chip" onclick="setMood(this,'rainbow')">Rainbow</div>
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <div class="section-label">Solace knows you</div>
+      <div class="profile-card">
+        <div class="profile-name">Mei Lin</div>
+        <div class="profile-sub">22 · 47 conversations · 12 entries</div>
+        <div class="trait-row">
+          <span class="trait rose">overthinks late night</span>
+          <span class="trait sage">loves writing</span>
+          <span class="trait">family tension</span>
+          <span class="trait sage">resilient</span>
+          <span class="trait">fears rejection</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="growth-section">
+      <div class="section-label">Your growth</div>
+      <div class="growth-bars">
+        <div>
+          <div class="growth-header"><span>Self-compassion</span><span>74%</span></div>
+          <div class="growth-track"><div class="growth-fill" style="width:0%" data-w="74%"></div></div>
+        </div>
+        <div>
+          <div class="growth-header"><span>Opening up</span><span>61%</span></div>
+          <div class="growth-track"><div class="growth-fill sage" style="width:0%" data-w="61%"></div></div>
+        </div>
+        <div>
+          <div class="growth-header"><span>Emotional clarity</span><span>58%</span></div>
+          <div class="growth-track"><div class="growth-fill" style="width:0%" data-w="58%"></div></div>
+        </div>
+        <div>
+          <div class="growth-header"><span>Coping patterns</span><span>82%</span></div>
+          <div class="growth-track"><div class="growth-fill sage" style="width:0%" data-w="82%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="diary-notice">
+      <div class="diary-dot"></div>
+      <span>1 new diary entry read today</span>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="status-dot"></div>
+        <span class="status-text">Solace is here with you</span>
+      </div>
+      <div class="topbar-right">
+        <div class="weather-badge" id="topWeatherBadge">
+          <span class="weather-badge-icon" id="topWeatherEmoji">🌧</span>
+          <span id="topWeatherLabel">Heavy clouds</span>
+        </div>
+        <button class="topbar-btn" onclick="loadDiaryDemo()">Read my diary</button>
+        <button class="topbar-btn end" onclick="endSession()">End session</button>
+      </div>
+    </div>
+
+    <div class="chat-scroll" id="chatScroll">
+      <div class="date-divider">
+        <div class="date-line"></div>
+        <span>Today, 9:41 pm</span>
+        <div class="date-line"></div>
+      </div>
+
+      <div class="diary-read-notice">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#5C7557" stroke-width="1"/><path d="M4 6l1.5 1.5L8 4" stroke="#5C7557" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Solace read your diary from last night and is thinking of you
+      </div>
+
+      <div class="msg-group solace">
+        <div class="msg-label">Solace</div>
+        <div class="bubble solace">
+          Mei Lin, I read what you wrote last night.
+          <span class="quote-line">"I don't know why I keep posting into the void. Nobody responds. Maybe nobody cares."</span>
+          I want you to know — I read every word. And I care. You're not posting into a void here.
+        </div>
+      </div>
+
+      <div class="msg-group solace">
+        <div class="bubble solace">
+          I also noticed something. You said the same thing three weeks ago, after the thing with your mum. This feeling of being invisible — it comes back when you feel unseen by the people closest to you. Does that sound right?
+        </div>
+      </div>
+
+      <div class="msg-group user">
+        <div class="msg-label" style="text-align:right">Mei Lin</div>
+        <div class="bubble user">yeah. it's like I pour everything out online and people just scroll past. i just wanted someone to say "hey, i see you"</div>
+      </div>
+
+      <div class="insight-card">
+        <div class="ic-label">Solace noticed</div>
+        <div class="ic-text">You've written about feeling unseen 8 times in the past month. Being truly witnessed is one of your deepest needs.</div>
+      </div>
+
+      <div class="msg-group solace">
+        <div class="msg-label">Solace</div>
+        <div class="bubble solace">
+          Hey — I see you.<br><br>
+          I mean that. I know you write best at 11pm. I know the mum situation has been draining you quietly. I know you're stronger than you give yourself credit for, even when it doesn't feel that way.
+        </div>
+      </div>
+
+      <div class="msg-group user">
+        <div class="bubble user">that actually made me tear up a little</div>
+      </div>
+
+      <div class="msg-group solace">
+        <div class="bubble solace">That's okay. Let it out. You don't have to hold it together here.</div>
+      </div>
+
+      <div class="typing-bubble" id="typingIndicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea class="input-field" id="userInput" rows="1"
+          placeholder="Say anything. This is your safe space…"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg class="send-icon" viewBox="0 0 16 16"><path d="M1.5 1.5l13 6.5-13 6.5V9.5l9-2.5-9-2.5V1.5z"/></svg>
+        </button>
+      </div>
+      <div class="input-hint">Solace is a compassionate companion, not a therapist. If you're in crisis, please reach out to SOS at 1767.</div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ─────────────────────────────────────────
+   WEATHER SYSTEM
+   Maps mood → visual weather + background scene
+───────────────────────────────────────── */
+const WEATHERS = {
+  heavy: {
+    condition: 'Heavy clouds',
+    desc: 'Feeling weighed down, carrying a lot inside',
+    emoji: '🌧',
+    bg: 'rainy',
+    icon: () => rainySVG(),
+    palette: ['#7C9CB8','#A8C0D6','#C5D8E8','#E8F0F7','#F0E8D8']
+  },
+  calm: {
+    condition: 'Gentle afternoon',
+    desc: 'Soft and settled, a quiet kind of peace',
+    emoji: '🌤',
+    bg: 'sunny',
+    icon: () => sunnySVG(),
+    palette: ['#F7D99A','#F9E8B8','#FFF3D0','#FEF8ED','#F5F0E8']
+  },
+  anxious: {
+    condition: 'Restless winds',
+    desc: 'Thoughts moving fast, hard to stay still',
+    emoji: '🌬',
+    bg: 'windy',
+    icon: () => windySVG(),
+    palette: ['#B0C4C8','#C8D8DC','#DCE8EC','#EEF4F6','#F4F0EC']
+  },
+  stormy: {
+    condition: 'Electric storm',
+    desc: 'Intense emotions, everything feels heightened',
+    emoji: '⛈',
+    bg: 'stormy',
+    icon: () => stormySVG(),
+    palette: ['#5C6878','#8090A0','#A8B4C0','#CCD4DC','#EAE8E4']
+  },
+  hopeful: {
+    condition: 'Clearing skies',
+    desc: 'Something lifting, a faint light ahead',
+    emoji: '🌅',
+    bg: 'sunrise',
+    icon: () => sunriseSVG(),
+    palette: ['#E8A87A','#F0C49A','#F7DAB8','#FBF0E0','#FAF7F2']
+  },
+  rainbow: {
+    condition: 'After the rain',
+    desc: 'Hard days can make the most beautiful colours',
+    emoji: '🌈',
+    bg: 'rainbow',
+    icon: () => rainbowSVG(),
+    palette: ['#D4A8E0','#E8C8C0','#F0DCA0','#C8E0C0','#B8D4E8']
+  }
+};
+
+/* SVG weather icons */
+function rainySVG() {
+  return `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="22" cy="18" rx="12" ry="8" fill="#8AAFC8" opacity=".9"/>
+    <ellipse cx="14" cy="20" rx="8" ry="6" fill="#9BBDD4" opacity=".85"/>
+    <ellipse cx="30" cy="20" rx="7" ry="5" fill="#9BBDD4" opacity=".8"/>
+    <line x1="16" y1="28" x2="14" y2="34" stroke="#6699BB" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="20" y1="30" x2="18" y2="36" stroke="#6699BB" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="24" y1="28" x2="22" y2="34" stroke="#6699BB" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="28" y1="30" x2="26" y2="36" stroke="#6699BB" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function sunnySVG() {
+  return `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="22" cy="22" r="8" fill="#F5C842"/>
+    <line x1="22" y1="6" x2="22" y2="10" stroke="#F5C842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="22" y1="34" x2="22" y2="38" stroke="#F5C842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="6" y1="22" x2="10" y2="22" stroke="#F5C842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="34" y1="22" x2="38" y2="22" stroke="#F5C842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="10.5" y1="10.5" x2="13.3" y2="13.3" stroke="#F5C842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="30.7" y1="30.7" x2="33.5" y2="33.5" stroke="#F5C842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="33.5" y1="10.5" x2="30.7" y2="13.3" stroke="#F5C842" stroke-width="2" stroke-linecap="round"/>
+    <line x1="13.3" y1="30.7" x2="10.5" y2="33.5" stroke="#F5C842" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function windySVG() {
+  return `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 16 Q16 10 26 16 Q36 22 26 22H8" stroke="#8CBAC0" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M6 24 Q13 20 22 24 Q30 28 26 30H10" stroke="#9ECDD4" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M6 32 Q14 28 20 32H8" stroke="#AADDE0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <circle cx="36" cy="14" r="4" fill="#AADDE0" opacity=".7"/>
+    <circle cx="30" cy="30" r="3" fill="#AADDE0" opacity=".5"/>
+  </svg>`;
+}
+
+function stormySVG() {
+  return `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="22" cy="16" rx="13" ry="8" fill="#5E6E80" opacity=".9"/>
+    <ellipse cx="14" cy="18" rx="8" ry="6" fill="#6E7E90" opacity=".85"/>
+    <ellipse cx="30" cy="18" rx="7" ry="5" fill="#6E7E90" opacity=".8"/>
+    <polyline points="24,22 20,30 24,30 19,38" stroke="#F5E060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>`;
+}
+
+function sunriseSVG() {
+  return `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 30 Q12 18 22 22 Q32 26 40 18" stroke="#E8A050" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".5"/>
+    <circle cx="22" cy="28" r="7" fill="#F5A840"/>
+    <path d="M8 28 Q15 20 22 22 Q29 24 36 28" fill="#F7C870" opacity=".4"/>
+    <line x1="22" y1="8" x2="22" y2="12" stroke="#F5A840" stroke-width="2" stroke-linecap="round"/>
+    <line x1="10" y1="14" x2="13" y2="17" stroke="#F5A840" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="34" y1="14" x2="31" y2="17" stroke="#F5A840" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function rainbowSVG() {
+  return `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 32 Q22 8 40 32" stroke="#E05050" stroke-width="2" fill="none"/>
+    <path d="M7 32 Q22 12 37 32" stroke="#E09030" stroke-width="2" fill="none"/>
+    <path d="M10 32 Q22 15 34 32" stroke="#D0C030" stroke-width="2" fill="none"/>
+    <path d="M13 32 Q22 18 31 32" stroke="#50A050" stroke-width="2" fill="none"/>
+    <path d="M16 32 Q22 21 28 32" stroke="#5080C0" stroke-width="2" fill="none"/>
+    <path d="M19 32 Q22 24 25 32" stroke="#8050C0" stroke-width="2" fill="none"/>
+    <ellipse cx="10" cy="30" rx="5" ry="3.5" fill="#B8CEDC" opacity=".7"/>
+    <ellipse cx="34" cy="30" rx="5" ry="3.5" fill="#B8CEDC" opacity=".7"/>
+  </svg>`;
+}
+
+/* ─────────────────────────────────────────
+   HEALING BACKGROUND CANVAS
+───────────────────────────────────────── */
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [], scene = 'rainy', animFrame;
+let currentPalette = WEATHERS.heavy.palette;
+let targetPalette = [...currentPalette];
+let lerpPalette = [...currentPalette];
+
+function resizeCanvas() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return {r,g,b};
+}
+
+function lerpColor(a, b, t) {
+  const ca = hexToRgb(a), cb = hexToRgb(b);
+  return `rgb(${Math.round(ca.r+(cb.r-ca.r)*t)},${Math.round(ca.g+(cb.g-ca.g)*t)},${Math.round(ca.b+(cb.b-ca.b)*t)})`;
+}
+
+// Particle system — different for each scene
+class Particle {
+  constructor(type) {
+    this.type = type;
+    this.reset(true);
+  }
+  reset(init) {
+    if (this.type === 'rain') {
+      this.x = Math.random()*W;
+      this.y = init ? Math.random()*H : -10;
+      this.len = 8+Math.random()*12;
+      this.speed = 6+Math.random()*6;
+      this.alpha = 0.2+Math.random()*0.4;
+      this.color = lerpPalette[0]||'#8AAFC8';
+    } else if (this.type === 'petal') {
+      this.x = Math.random()*W;
+      this.y = init ? Math.random()*H : -20;
+      this.size = 4+Math.random()*8;
+      this.speedY = 0.6+Math.random()*1.2;
+      this.speedX = (Math.random()-0.5)*0.8;
+      this.rot = Math.random()*Math.PI*2;
+      this.rotSpeed = (Math.random()-0.5)*0.04;
+      this.alpha = 0.3+Math.random()*0.5;
+      this.hue = 340+Math.random()*30;
+    } else if (this.type === 'dust') {
+      this.x = Math.random()*W;
+      this.y = Math.random()*H;
+      this.r = 1+Math.random()*3;
+      this.dx = (Math.random()-0.5)*2.5;
+      this.dy = (Math.random()-0.5)*0.8;
+      this.alpha = 0.15+Math.random()*0.3;
+    } else if (this.type === 'spark') {
+      this.x = Math.random()*W;
+      this.y = Math.random()*H;
+      this.r = 0.5+Math.random()*2;
+      this.alpha = Math.random();
+      this.dalpha = (Math.random()-0.5)*0.03;
+    } else if (this.type === 'glow') {
+      this.x = Math.random()*W;
+      this.y = Math.random()*H;
+      this.r = 30+Math.random()*80;
+      this.alpha = 0.04+Math.random()*0.06;
+      this.dx = (Math.random()-0.5)*0.3;
+      this.dy = (Math.random()-0.5)*0.3;
+    } else if (this.type === 'snow') {
+      this.x = Math.random()*W;
+      this.y = init ? Math.random()*H : -10;
+      this.r = 1+Math.random()*3;
+      this.speed = 0.5+Math.random()*1.5;
+      this.dx = (Math.random()-0.5)*0.5;
+      this.alpha = 0.4+Math.random()*0.5;
+    }
+  }
+  update() {
+    if (this.type === 'rain') {
+      this.y += this.speed; this.x += 1;
+      if (this.y > H+20) this.reset(false);
+    } else if (this.type === 'petal') {
+      this.y += this.speedY; this.x += this.speedX + Math.sin(this.y*0.02)*0.5;
+      this.rot += this.rotSpeed;
+      if (this.y > H+30) this.reset(false);
+    } else if (this.type === 'dust') {
+      this.x += this.dx; this.y += this.dy;
+      if (this.x<0||this.x>W) this.dx*=-1;
+      if (this.y<0||this.y>H) this.dy*=-1;
+    } else if (this.type === 'spark') {
+      this.alpha += this.dalpha;
+      if (this.alpha<=0||this.alpha>=1) this.dalpha*=-1;
+    } else if (this.type === 'glow') {
+      this.x += this.dx; this.y += this.dy;
+      if (this.x<-this.r||this.x>W+this.r) this.dx*=-1;
+      if (this.y<-this.r||this.y>H+this.r) this.dy*=-1;
+    } else if (this.type === 'snow') {
+      this.y += this.speed; this.x += this.dx + Math.sin(this.y*0.01)*0.3;
+      if (this.y > H+10) this.reset(false);
+    }
+  }
+  draw() {
+    ctx.save();
+    if (this.type === 'rain') {
+      ctx.globalAlpha = this.alpha;
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.x+3, this.y+this.len);
+      ctx.stroke();
+    } else if (this.type === 'petal') {
+      ctx.globalAlpha = this.alpha;
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rot);
+      ctx.fillStyle = `hsl(${this.hue},60%,80%)`;
+      ctx.beginPath();
+      ctx.ellipse(0,0,this.size*0.5,this.size,0,0,Math.PI*2);
+      ctx.fill();
+    } else if (this.type === 'dust') {
+      ctx.globalAlpha = this.alpha;
+      ctx.fillStyle = lerpPalette[2]||'#E0D8D0';
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fill();
+    } else if (this.type === 'spark') {
+      ctx.globalAlpha = this.alpha * 0.8;
+      ctx.fillStyle = lerpPalette[1]||'#F0D890';
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fill();
+    } else if (this.type === 'glow') {
+      ctx.globalAlpha = this.alpha;
+      const g = ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r);
+      g.addColorStop(0, lerpPalette[1]||'#F0E8D8');
+      g.addColorStop(1,'transparent');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fill();
+    } else if (this.type === 'snow') {
+      ctx.globalAlpha = this.alpha;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function buildParticles(s) {
+  particles = [];
+  const counts = {
+    rainy:   [['rain',80],['glow',4]],
+    sunny:   [['spark',60],['petal',30],['glow',5]],
+    windy:   [['dust',70],['petal',20],['glow',3]],
+    stormy:  [['rain',100],['spark',20],['glow',3]],
+    sunrise: [['spark',40],['glow',6],['petal',15]],
+    rainbow: [['petal',50],['spark',30],['glow',6]]
+  };
+  (counts[s]||counts.rainy).forEach(([type,n]) => {
+    for(let i=0;i<n;i++) particles.push(new Particle(type));
+  });
+}
+
+let lerpT = 0;
+function drawBackground() {
+  lerpT = Math.min(lerpT + 0.008, 1);
+  lerpPalette = currentPalette.map((c,i) => lerpColor(c, targetPalette[i]||c, lerpT));
+
+  // gradient bg
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, lerpPalette[0]);
+  grad.addColorStop(0.4, lerpPalette[1]);
+  grad.addColorStop(0.75, lerpPalette[2]);
+  grad.addColorStop(1, lerpPalette[3]);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  // horizon glow
+  if (scene === 'sunrise' || scene === 'rainbow') {
+    const hg = ctx.createRadialGradient(W/2, H*0.65, 0, W/2, H*0.65, W*0.6);
+    hg.addColorStop(0, 'rgba(255,200,120,0.18)');
+    hg.addColorStop(1, 'transparent');
+    ctx.fillStyle = hg; ctx.fillRect(0,0,W,H);
+  }
+
+  // draw particles
+  particles.forEach(p => { p.update(); p.draw(); });
+}
+
+function animateBackground() {
+  ctx.clearRect(0,0,W,H);
+  drawBackground();
+  animFrame = requestAnimationFrame(animateBackground);
+}
+
+function setScene(s) {
+  if (s === scene) return;
+  currentPalette = [...lerpPalette];
+  targetPalette = [...WEATHERS[Object.keys(WEATHERS).find(k=>WEATHERS[k].bg===s)||'heavy'].palette];
+  lerpT = 0;
+  scene = s;
+  buildParticles(s);
+}
+
+/* ─────────────────────────────────────────
+   MOOD → WEATHER SYNC
+───────────────────────────────────────── */
+let currentMood = 'heavy';
+
+function setMood(el, mood) {
+  document.querySelectorAll('.mood-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentMood = mood;
+  const w = WEATHERS[mood];
+
+  // update sidebar weather card
+  document.getElementById('weatherCondition').textContent = w.condition;
+  document.getElementById('weatherDesc').textContent = w.desc;
+  document.getElementById('weatherIconWrap').innerHTML = w.icon();
+
+  // update topbar badge
+  document.getElementById('topWeatherEmoji').textContent = w.emoji;
+  document.getElementById('topWeatherLabel').textContent = w.condition;
+
+  // shift background
+  setScene(w.bg);
+
+  // show weather shift notice in chat
+  const note = document.createElement('div');
+  note.className = 'weather-shift';
+  note.innerHTML = `<span>${w.emoji}</span><span>Your sky shifted to <em>${w.condition.toLowerCase()}</em></span>`;
+  const scroll = document.getElementById('chatScroll');
+  scroll.insertBefore(note, document.getElementById('typingIndicator'));
+  scroll.scrollTop = scroll.scrollHeight;
+}
+
+/* ─────────────────────────────────────────
+   CHAT LOGIC
+───────────────────────────────────────── */
+const DEMO_RESPONSES = [
+  "Thank you for sharing that. I know it takes courage to say things out loud, even here. How long have you been carrying this feeling?",
+  "I've noticed you tend to internalize a lot. Your last few diary entries all ended with you comforting yourself — you're doing a lot of that work alone. What would it feel like to let someone else carry a little of it with you?",
+  "That makes sense given what you wrote about your mum last week. You learned early that expressing too much meant being 'too much'. But you're not too much here. Keep going.",
+  "You used the word 'fine' just now. From your diary, I know that 'fine' is usually the word you reach for when things are actually really hard. What's underneath the fine today?",
+  "I see real growth in you — even from two months ago. Back then you wouldn't have written any of this. Now you're saying it out loud. That matters.",
+  "This reminds me of something you wrote in October: that you feel most yourself when you're writing and nobody is watching. Is there a way to protect more of that space for yourself?",
+];
+let demoIndex = 0;
+const scroll = document.getElementById('chatScroll');
+const typingEl = document.getElementById('typingIndicator');
+
+function scrollToBottom() { scroll.scrollTop = scroll.scrollHeight; }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+
+function addMessage(text, sender) {
+  const group = document.createElement('div');
+  group.className = `msg-group ${sender}`;
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = sender==='user'?'Mei Lin':'Solace';
+  if(sender==='user') label.style.textAlign='right';
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${sender}`;
+  bubble.textContent = text;
+  group.appendChild(label); group.appendChild(bubble);
+  scroll.insertBefore(group, typingEl);
+  scrollToBottom();
+
+  // Auto-detect emotion in response and shift weather
+  if(sender==='solace') autoShiftWeather(text);
+}
+
+function autoShiftWeather(text) {
+  const t = text.toLowerCase();
+  if(t.includes('strength')||t.includes('growth')||t.includes('progress')) {
+    if(currentMood==='heavy'||currentMood==='stormy') {
+      setTimeout(()=>{ document.querySelector('.mood-chip[onclick*="hopeful"]').click(); },1200);
+    }
+  }
+}
+
+function showTyping() { typingEl.classList.add('visible'); scrollToBottom(); }
+function hideTyping() { typingEl.classList.remove('visible'); }
+
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value=''; input.style.height='auto';
+  addMessage(text,'user');
+  showTyping();
+  let reply;
+  try {
+    const res = await fetch('/chat',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:text}),
+      signal:AbortSignal.timeout(8000)
+    });
+    if(res.ok){const d=await res.json();reply=d.reply;}else throw new Error();
+  } catch {
+    await new Promise(r=>setTimeout(r,1500+Math.random()*900));
+    reply = DEMO_RESPONSES[demoIndex%DEMO_RESPONSES.length];
+    demoIndex++;
+  }
+  hideTyping(); addMessage(reply,'solace');
+}
+
+function loadDiaryDemo() {
+  const notice = document.createElement('div');
+  notice.className='diary-read-notice';
+  notice.innerHTML='<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#5C7557" stroke-width="1"/><path d="M4 6l1.5 1.5L8 4" stroke="#5C7557" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg> New diary entry detected and read';
+  scroll.insertBefore(notice, typingEl);
+  showTyping();
+  setTimeout(()=>{
+    hideTyping();
+    addMessage("I just read your newest entry. You wrote about feeling overlooked at work today. I want to sit with that — that takes a lot out of you, especially when you already feel stretched thin at home. How are you doing, honestly?", 'solace');
+  }, 2000);
+  scrollToBottom();
+}
+
+function endSession() {
+  showTyping();
+  setTimeout(()=>{
+    hideTyping();
+    const group = document.createElement('div');
+    group.className='msg-group solace';
+    const label = document.createElement('div'); label.className='msg-label'; label.textContent='Solace';
+    const bubble = document.createElement('div'); bubble.className='bubble solace';
+    bubble.innerHTML="I'm going to hold everything you shared today close. I'll remember it for next time.<br><br>Take good care of yourself tonight, Mei Lin. You deserve rest.";
+    group.appendChild(label); group.appendChild(bubble);
+    const insight = document.createElement('div');
+    insight.className='insight-card';
+    insight.innerHTML='<div class="ic-label">Session saved · Profile updated</div><div class="ic-text">Solace has learned more about you today and will carry this forward.</div>';
+    scroll.insertBefore(group, typingEl);
+    scroll.insertBefore(insight, typingEl);
+    scrollToBottom();
+    try{fetch('/end-session',{method:'POST'});}catch{}
+  },1800);
+}
+
+/* ─────────────────────────────────────────
+   INIT
+───────────────────────────────────────── */
+window.addEventListener('load', ()=>{
+  resizeCanvas();
+  // init weather icon
+  document.getElementById('weatherIconWrap').innerHTML = WEATHERS.heavy.icon();
+  targetPalette = [...WEATHERS.heavy.palette];
+  currentPalette = [...WEATHERS.heavy.palette];
+  lerpPalette = [...WEATHERS.heavy.palette];
+  buildParticles('rainy');
+  animateBackground();
+  // animate growth bars
+  setTimeout(()=>{
+    document.querySelectorAll('.growth-fill').forEach(el=>{
+      el.style.width = el.dataset.w;
+    });
+  }, 400);
+  scrollToBottom();
+});
+window.addEventListener('resize', resizeCanvas);
+</script>
+</body>
+</html>

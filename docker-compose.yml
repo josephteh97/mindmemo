@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  solace:
+    build: .
+    container_name: solace_agent
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./diary:/app/diary
+      - ./memory:/app/memory
+      - ./web:/app/web
+    env_file:
+      - .env
+    restart: unless-stopped
