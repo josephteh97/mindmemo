@@ -33,7 +33,7 @@ def chat(user_message: str, history: list) -> tuple[str, list]:
     system_prompt = build_system_prompt()
 
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
+        model_name="gemini-2.0-flash",
         system_instruction=system_prompt
     )
 

@@ -56,6 +56,24 @@ def end_session():
     session_store["processed_this_session"] = []
     return jsonify({"status": "Session ended. Profile updated."})
 
+@app.route("/diary", methods=["POST"])
+def write_diary():
+    data = request.json
+    content = data.get("content", "").strip()
+
+    if not content:
+        return jsonify({"error": "Empty diary entry"}), 400
+
+    from datetime import datetime
+    filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt"
+    path = os.path.join("/app/diary", filename)
+    os.makedirs("/app/diary", exist_ok=True)
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    return jsonify({"status": "saved", "filename": filename}), 201
+
 @app.route("/profile", methods=["GET"])
 def get_profile():
     from profile_manager import load_profile
