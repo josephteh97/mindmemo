@@ -295,12 +295,72 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);c
   to{opacity:1;transform:translateY(0);}
 }
 .msg-group,.insight-card,.diary-read-notice,.weather-shift{animation:fadeUp .3s ease forwards;}
+
+/* ── DIARY MODAL ── */
+.diary-overlay{
+  display:none;position:fixed;inset:0;z-index:100;
+  background:rgba(42,33,24,0.45);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+}
+.diary-overlay.open{display:flex;}
+.diary-modal{
+  background:var(--card);border:1px solid var(--blush);
+  border-radius:20px;width:min(540px,92vw);
+  padding:30px 28px 24px;
+  box-shadow:0 16px 48px rgba(42,33,24,0.18);
+  display:flex;flex-direction:column;gap:16px;
+  animation:fadeUp .25s ease forwards;
+}
+.diary-modal-title{
+  font-family:'Cormorant Garamond',serif;font-size:22px;
+  font-weight:400;color:var(--rosedark);
+}
+.diary-modal-sub{font-size:12px;color:var(--ink-soft);}
+.diary-textarea{
+  width:100%;min-height:180px;resize:vertical;
+  border:1px solid var(--blush);border-radius:12px;
+  padding:14px 16px;font-family:'DM Sans',sans-serif;
+  font-size:14px;color:var(--ink);background:var(--cream);
+  outline:none;line-height:1.6;transition:border-color .15s;
+}
+.diary-textarea:focus{border-color:var(--rose);}
+.diary-textarea::placeholder{color:var(--ink-ghost);}
+.diary-modal-actions{display:flex;gap:9px;justify-content:flex-end;}
+.diary-cancel-btn{
+  padding:8px 18px;border-radius:20px;font-size:13px;
+  font-family:'DM Sans',sans-serif;cursor:pointer;
+  border:1px solid var(--blush);background:transparent;color:var(--ink-mid);
+  transition:all .15s;
+}
+.diary-cancel-btn:hover{background:var(--parchment);}
+.diary-save-btn{
+  padding:8px 20px;border-radius:20px;font-size:13px;
+  font-family:'DM Sans',sans-serif;cursor:pointer;
+  border:none;background:var(--rose);color:white;
+  transition:background .15s,transform .1s;
+}
+.diary-save-btn:hover{background:var(--rosedark);}
+.diary-save-btn:active{transform:scale(.96);}
+.diary-save-btn:disabled{opacity:.55;cursor:default;}
 </style>
 </head>
 <body>
 
 <!-- HEALING BACKGROUND -->
 <canvas id="bgCanvas"></canvas>
+
+<!-- DIARY MODAL -->
+<div class="diary-overlay" id="diaryOverlay" onclick="closeDiaryIfBg(event)">
+  <div class="diary-modal">
+    <div class="diary-modal-title">Write in your diary</div>
+    <div class="diary-modal-sub">Your words are private. Solace will read this when you next chat.</div>
+    <textarea class="diary-textarea" id="diaryText" placeholder="What's on your mind today…"></textarea>
+    <div class="diary-modal-actions">
+      <button class="diary-cancel-btn" onclick="closeDiary()">Cancel</button>
+      <button class="diary-save-btn" id="diarySaveBtn" onclick="saveDiary()">Save entry</button>
+    </div>
+  </div>
+</div>
 
 <div class="app">
   <!-- ── SIDEBAR ── -->
@@ -400,6 +460,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);c
           <span class="weather-badge-icon" id="topWeatherEmoji">🌧</span>
           <span id="topWeatherLabel">Heavy clouds</span>
         </div>
+        <button class="topbar-btn" onclick="openDiary()">Write diary</button>
         <button class="topbar-btn" onclick="loadDiaryDemo()">Read my diary</button>
         <button class="topbar-btn end" onclick="endSession()">End session</button>
       </div>
@@ -948,6 +1009,49 @@ function endSession() {
     scrollToBottom();
     try{fetch('/end-session',{method:'POST'});}catch{}
   },1800);
+}
+
+/* ─────────────────────────────────────────
+   DIARY MODAL
+───────────────────────────────────────── */
+function openDiary() {
+  document.getElementById('diaryOverlay').classList.add('open');
+  document.getElementById('diaryText').focus();
+}
+
+function closeDiary() {
+  document.getElementById('diaryOverlay').classList.remove('open');
+}
+
+function closeDiaryIfBg(e) {
+  if (e.target === document.getElementById('diaryOverlay')) closeDiary();
+}
+
+async function saveDiary() {
+  const text = document.getElementById('diaryText').value.trim();
+  if (!text) return;
+  const btn = document.getElementById('diarySaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  let saved = false;
+  try {
+    const res = await fetch('/diary', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({content: text})
+    });
+    saved = res.ok;
+  } catch {}
+  closeDiary();
+  document.getElementById('diaryText').value = '';
+  btn.disabled = false;
+  btn.textContent = 'Save entry';
+  // Show notice in chat
+  const notice = document.createElement('div');
+  notice.className = 'diary-read-notice';
+  notice.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#5C7557" stroke-width="1"/><path d="M4 6l1.5 1.5L8 4" stroke="#5C7557" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg> '
+    + (saved ? 'Diary entry saved — Solace will read it next time you chat' : 'Entry saved locally (offline mode)');
+  scroll.insertBefore(notice, typingEl);
+  scrollToBottom();
 }
 
 /* ─────────────────────────────────────────
